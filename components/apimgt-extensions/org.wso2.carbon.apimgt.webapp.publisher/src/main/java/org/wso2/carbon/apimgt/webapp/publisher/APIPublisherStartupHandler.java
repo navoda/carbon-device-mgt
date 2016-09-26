@@ -21,6 +21,7 @@ package org.wso2.carbon.apimgt.webapp.publisher;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.californium.core.CoapClient;
 import org.wso2.carbon.apimgt.api.model.API;
 import org.wso2.carbon.apimgt.webapp.publisher.internal.APIPublisherDataHolder;
 import org.wso2.carbon.core.ServerStartupObserver;
@@ -45,6 +46,12 @@ public class APIPublisherStartupHandler implements ServerStartupObserver {
     @Override
     public void completedServerStartup() {
         APIPublisherDataHolder.getInstance().setServerStarted(true);
+
+        /*coap client bound to the server
+        [the server is inthe static default port for now]
+        */
+        APIPublisherDataHolder.getInstance().setClient(new CoapClient("coap://localhost:5683/rd"));
+
         currentAPIsStack = APIPublisherDataHolder.getInstance().getUnpublishedApis();
         Thread t = new Thread(new Runnable() {
             @Override

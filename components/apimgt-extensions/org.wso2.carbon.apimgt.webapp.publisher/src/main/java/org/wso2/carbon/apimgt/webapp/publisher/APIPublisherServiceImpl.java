@@ -25,6 +25,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapResponse;
+import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.Request;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.APIProvider;
 import org.wso2.carbon.apimgt.api.FaultGatewaysException;
@@ -77,6 +82,27 @@ public class APIPublisherServiceImpl implements APIPublisherService {
                                 "' with context '" + api.getContext() + "' and version '"
                                 + api.getId().getVersion() + "'");
                     }
+
+                    /*addd api to the rd using the client*/
+                    CoapClient client= APIPublisherDataHolder.getInstance().getClient();
+                    Request request= new Request(CoAP.Code.POST, CoAP.Type.CON);
+                    request.setURI(client.getURI()+"?ep="+api.getId().getApiName()+"&d="+tenantDomain+"&con='"+api.getUrl()+"'"); //endpoint name, domain, context
+                    request.setPayload("<"+api.getContext()+">");
+                    client.advanced(new CoapHandler() {
+                        @Override
+                        public void onLoad(CoapResponse coapResponse) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("API '" + api.getId().getApiName() +
+                                        "' - "+coapResponse);
+                            }
+                        }
+
+                        @Override
+                        public void onError() {
+
+                        }
+                    },request);
+
                 } else {
                     if  (provider.getAPI(api.getId()).getStatus() == APIStatus.CREATED) {
                         provider.changeLifeCycleStatus(api.getId(), PUBLISH_ACTION);
