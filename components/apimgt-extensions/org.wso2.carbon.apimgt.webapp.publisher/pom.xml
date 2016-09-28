@@ -103,6 +103,17 @@
             <groupId>org.wso2.carbon.governance</groupId>
             <artifactId>org.wso2.carbon.governance.lcm</artifactId>
         </dependency>
+        <!-- californium dependancies -->
+        <dependency>
+            <groupId>org.eclipse.californium</groupId>
+            <artifactId>cf-rd</artifactId>
+            <version>1.0.0-M3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.californium</groupId>
+            <artifactId>scandium</artifactId>
+            <version>1.0.0-M3</version>
+        </dependency>
     </dependencies>
 
 
