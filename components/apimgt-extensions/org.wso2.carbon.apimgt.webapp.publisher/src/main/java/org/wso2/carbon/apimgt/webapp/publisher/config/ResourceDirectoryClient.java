@@ -14,5 +14,67 @@
  */
 package org.wso2.carbon.apimgt.webapp.publisher.config;
 
-public class ResourceDirectoryClient {
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapResponse;
+import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.Request;
+import org.wso2.carbon.apimgt.api.model.API;
+import org.wso2.carbon.apimgt.webapp.publisher.APIPublisherStartupHandler;
+
+import java.net.URI;
+import java.util.logging.Logger;
+
+public class ResourceDirectoryClient extends CoapClient {
+
+    private static final Log log = LogFactory.getLog(APIPublisherStartupHandler.class);
+    private final static String LOCAL_HOST="localhost";
+    private final static String RESOURCE_DIRECTORY="rd";
+
+    public ResourceDirectoryClient() {
+        super(CoAP.COAP_URI_SCHEME,LOCAL_HOST,CoAP.DEFAULT_COAP_PORT,RESOURCE_DIRECTORY);
+    }
+
+    //register publishing api to the resource directory
+    public void registerAPI(API api,String domain)
+    {
+        if(this.isServerConnected()) {
+
+            String endpoint=api.getContext().split("/")[1];
+            URI apiURI= URI.create(api.getUrl());
+
+            Request request = new Request(CoAP.Code.POST, CoAP.Type.CON); //coap request to send the api to server
+            /*add api to the rd using the client*/
+            request.setURI(this.getURI() + "?ep=" + endpoint + "&d=" + domain+"&con=" +apiURI.getScheme()+"://"+apiURI.getHost()+":"+apiURI.getPort()); //endpoint name, domain and context
+            request.setPayload("<" + api.getContext() + ">");
+            this.advanced(new CoapHandler() {
+                @Override
+                public void onLoad(CoapResponse coapResponse) {
+                    if (log.isDebugEnabled()) {
+                        log.debug(coapResponse.getResponseText());
+                    }
+                }
+                @Override
+                public void onError() {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Error adding API to the resource directory");
+                    }
+                }
+            }, request);
+        }
+        else
+        {
+            if (log.isDebugEnabled()) {
+                log.debug("CoAP server not connected");
+            }
+        }
+    }
+
+
+    public boolean isServerConnected()
+    {
+        return this.ping();
+    }
 }

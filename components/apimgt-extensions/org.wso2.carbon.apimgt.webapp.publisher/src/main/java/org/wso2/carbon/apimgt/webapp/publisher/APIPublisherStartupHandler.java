@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.californium.core.CoapClient;
 import org.wso2.carbon.apimgt.api.model.API;
+import org.wso2.carbon.apimgt.webapp.publisher.config.ResourceDirectoryClient;
 import org.wso2.carbon.apimgt.webapp.publisher.internal.APIPublisherDataHolder;
 import org.wso2.carbon.core.ServerStartupObserver;
 
@@ -60,9 +61,8 @@ public class APIPublisherStartupHandler implements ServerStartupObserver {
                 /*coap client bound to the server
                 [the server is inthe static default port for now]
                 */
-
-                APIPublisherDataHolder.getInstance().setClient(new CoapClient("coap://localhost:5683/rd"));
-                if (APIPublisherDataHolder.getInstance().getClient().ping()) {
+                APIPublisherDataHolder.getInstance().setClient(new ResourceDirectoryClient());
+                if (APIPublisherDataHolder.getInstance().getClient().isServerConnected()) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client set to the started coap server @ " + APIPublisherDataHolder.getInstance().getClient().getURI());
                     }
@@ -71,6 +71,7 @@ public class APIPublisherStartupHandler implements ServerStartupObserver {
                         log.debug("Coap server not connected");
                     }
                 }
+
                 publisher = APIPublisherDataHolder.getInstance().getApiPublisherService();
                 while (!failedAPIsStack.isEmpty() || !currentAPIsStack.isEmpty()) {
                     try {

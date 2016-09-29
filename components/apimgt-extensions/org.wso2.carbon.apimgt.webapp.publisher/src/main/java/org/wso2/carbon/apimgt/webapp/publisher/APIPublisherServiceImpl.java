@@ -25,16 +25,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapHandler;
-import org.eclipse.californium.core.CoapResponse;
-import org.eclipse.californium.core.coap.CoAP;
-import org.eclipse.californium.core.coap.Request;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.APIProvider;
 import org.wso2.carbon.apimgt.api.FaultGatewaysException;
 import org.wso2.carbon.apimgt.api.model.*;
 import org.wso2.carbon.apimgt.impl.APIManagerFactory;
+import org.wso2.carbon.apimgt.webapp.publisher.config.ResourceDirectoryClient;
 import org.wso2.carbon.apimgt.webapp.publisher.internal.APIPublisherDataHolder;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.governance.lcm.util.CommonUtil;
@@ -55,16 +51,17 @@ public class APIPublisherServiceImpl implements APIPublisherService {
     private static final Log log = LogFactory.getLog(APIPublisherServiceImpl.class);
     private static final String PUBLISH_ACTION = "Publish";
 
+
     @Override
     public void publishAPI(final API api) throws APIManagementException, FaultGatewaysException {
+
+        ResourceDirectoryClient client=APIPublisherDataHolder.getInstance().getClient();
         String tenantDomain = MultitenantUtils.getTenantDomain(api.getApiOwner());
         PrivilegedCarbonContext.startTenantFlow();
         PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain, true);
         try {
             int tenantId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantId();
 
-            CoapClient client= new CoapClient("coap://localhost:5683/rd"); //create the client bound to the server
-            Request request= new Request(CoAP.Code.POST, CoAP.Type.CON); //coap request to send the api to server
             // Below code snippet is added to load API Lifecycle in tenant mode.
             RegistryService registryService = APIPublisherDataHolder.getInstance().getRegistryService();
             CommonUtil.addDefaultLifecyclesIfNotAvailable(registryService.getConfigSystemRegistry(tenantId),
@@ -87,7 +84,6 @@ public class APIPublisherServiceImpl implements APIPublisherService {
                     }
 
 
-
                 } else {
                     if  (provider.getAPI(api.getId()).getStatus() == APIStatus.CREATED) {
                         provider.changeLifeCycleStatus(api.getId(), PUBLISH_ACTION);
@@ -100,25 +96,12 @@ public class APIPublisherServiceImpl implements APIPublisherService {
                                 + api.getId().getVersion() + "'. Thus, the API config is updated");
                     }
                 }
+
                 provider.saveSwagger20Definition(api.getId(), createSwaggerDefinition(api));
 
-                /*add api to the rd using the client*/
-                request.setURI(client.getURI()+"?ep="+api.getId().getApiName()+"&d="+tenantDomain); //endpoint name, domain
-                request.setPayload("<"+api.getContext()+">");
-                client.advanced(new CoapHandler() {
-                    @Override
-                    public void onLoad(CoapResponse coapResponse) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("API '" + api.getId().getApiName() +
-                                    "' - "+coapResponse);
-                        }
-                    }
+                /*register api using the client*/
+                client.registerAPI(api,tenantDomain);
 
-                    @Override
-                    public void onError() {
-
-                    }
-                },request);
             } else {
                 throw new APIManagementException("API provider configured for the given API configuration " +
                         "is null. Thus, the API is not published");
