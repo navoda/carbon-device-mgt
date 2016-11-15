@@ -100,7 +100,8 @@ public class APIPublisherServiceImpl implements APIPublisherService {
                 provider.saveSwagger20Definition(api.getId(), createSwaggerDefinition(api));
 
                 /*register api using the client*/
-                client.registerAPI(api,tenantDomain);
+                if(!api.getContext().split("/")[1].equals("devicemgt_admin")) //remove device mgt API from registering into CoAP server
+                    client.registerAPI(api,tenantDomain);
 
             } else {
                 throw new APIManagementException("API provider configured for the given API configuration " +
